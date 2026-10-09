@@ -55,11 +55,35 @@ class ShrinkVideo extends HTMLElement {
     this.video.style.cssText =
       "width:100%;height:100%;object-fit:cover;display:block;";
     this.frame.appendChild(this.video);
+
+    // Bouton son (les navigateurs interdisent le son automatique : il faut un clic)
+    this.btn = document.createElement("button");
+    this.btn.type = "button";
+    this.btn.style.cssText =
+      "position:absolute;right:16px;bottom:16px;z-index:5;width:44px;height:44px;" +
+      "border-radius:50%;border:1px solid rgba(255,255,255,0.5);" +
+      "background:rgba(0,0,0,0.5);color:#fff;font-size:20px;line-height:1;" +
+      "cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;";
+    this.updateBtn();
+    this.btn.addEventListener("click", () => {
+      this.video.muted = !this.video.muted;
+      if (!this.video.muted) {
+        this.video.volume = 1;
+        const pl = this.video.play();
+        if (pl && pl.catch) pl.catch(() => {});
+      }
+      this.updateBtn();
+    });
+    this.frame.appendChild(this.btn);
+
     this.appendChild(this.frame);
     this.updateSrc();
 
     // Dans l'éditeur Wix, on n'active pas le blocage du scroll
-    this.inEditor = (document.referrer || "").indexOf("editor.wix.com") !== -1;
+    // (seulement si la page est dans un cadre ET vient de l'éditeur Wix)
+    this.inEditor =
+      window.self !== window.top &&
+      (document.referrer || "").indexOf("editor.wix.com") !== -1;
 
     // Si la page est déjà scrollée (rechargement), on affiche directement la taille finale
     if (this.inEditor || window.scrollY > 5) {
@@ -88,6 +112,12 @@ class ShrinkVideo extends HTMLElement {
 
   attributeChangedCallback() {
     if (this.video) this.updateSrc();
+  }
+
+  updateBtn() {
+    const muted = this.video.muted;
+    this.btn.textContent = muted ? "🔇" : "🔊";
+    this.btn.setAttribute("aria-label", muted ? "Activer le son" : "Couper le son");
   }
 
   updateSrc() {
