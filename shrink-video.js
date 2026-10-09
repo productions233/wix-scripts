@@ -3,7 +3,7 @@
 // que la page est bloquée, puis la page se met à défiler normalement.
 
 // ====== À MODIFIER ======
-const VIDEO_URL = "https://video.wixstatic.com/video/c2054d_f287c70e838842178e66c4b2183b10fb/1080p/mp4/file.mp4"; // si ça ne marche pas, remplace 1080p par 720p
+const VIDEO_URL = "https://video.wixstatic.com/video/c2054d_f287c70e838842178e66c4b2183b10fb/720p/mp4/file.mp4"; // si ça ne marche pas, essaie 480p ou remets 1080p
 const POSTER_URL = "https://static.wixstatic.com/media/c2054d_f287c70e838842178e66c4b2183b10fbf001.jpg"; // image affichée avant le chargement de la vidéo
 const FINAL_SCALE = 0.6;      // taille finale de la vidéo : 0.6 = 60 % de l'écran (centrée)
 const SCROLL_DISTANCE = 700;  // plus grand = réduction plus lente (en pixels de molette)
