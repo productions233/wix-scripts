@@ -181,24 +181,29 @@ class ShrinkVideo extends HTMLElement {
     const p = this.current;
     const f = this.frame;
 
-    // Taille finale : vidéo centrée dans l'élément, à FINAL_SCALE de sa taille
+    const r = this.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // Taille finale : FINAL_SCALE de l'écran, centrée au milieu de l'écran
+    const fw = vw * FINAL_SCALE;
+    const fh = vh * FINAL_SCALE;
+    const fl = (vw - fw) / 2;
+    const ft = (vh - fh) / 2;
+
+    // Une fois réduite, la vidéo fait partie de la page (elle défile avec elle)
     if (p >= 1) {
+      const hostTop = r.top + window.scrollY; // position de l'élément sur la page
       f.style.cssText =
-        "position:absolute;left:50%;top:50%;overflow:hidden;background:#000;" +
-        "width:" + FINAL_SCALE * 100 + "%;height:" + FINAL_SCALE * 100 + "%;" +
-        "transform:translate(-50%,-50%);" +
+        "position:absolute;overflow:hidden;background:#000;" +
+        "left:" + (fl - r.left) + "px;" +
+        "top:" + (ft - hostTop) + "px;" +
+        "width:" + fw + "px;height:" + fh + "px;" +
         "border-radius:" + FINAL_RADIUS + "px;";
       return;
     }
 
     // Pendant la réduction : la vidéo est fixée à l'écran et rejoint sa taille finale
-    const r = this.getBoundingClientRect();
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const fw = r.width * FINAL_SCALE;
-    const fh = r.height * FINAL_SCALE;
-    const fl = r.left + (r.width - fw) / 2;
-    const ft = r.top + (r.height - fh) / 2;
     f.style.cssText =
       "position:fixed;z-index:2147483000;overflow:hidden;background:#000;" +
       "left:" + lerp(0, fl, p) + "px;" +
