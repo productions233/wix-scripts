@@ -5,6 +5,7 @@
 // ====== À MODIFIER ======
 const VIDEO_URL = "https://video.wixstatic.com/video/c2054d_f287c70e838842178e66c4b2183b10fb/1080p/mp4/file.mp4"; // si ça ne marche pas, remplace 1080p par 720p
 const POSTER_URL = "https://static.wixstatic.com/media/c2054d_f287c70e838842178e66c4b2183b10fbf001.jpg"; // image affichée avant le chargement de la vidéo
+const FINAL_SCALE = 0.6;      // taille finale de la vidéo : 0.6 = 60 % de l'écran (centrée)
 const SCROLL_DISTANCE = 700;  // plus grand = réduction plus lente (en pixels de molette)
 const FINAL_RADIUS = 16;      // coins arrondis à la taille finale (0 = coins carrés)
 const SMOOTHING = 0.14;       // fluidité (0.05 = très doux, 0.3 = très réactif)
@@ -180,24 +181,30 @@ class ShrinkVideo extends HTMLElement {
     const p = this.current;
     const f = this.frame;
 
-    // Taille finale : la vidéo remplit l'élément placé dans la page
+    // Taille finale : vidéo centrée dans l'élément, à FINAL_SCALE de sa taille
     if (p >= 1) {
       f.style.cssText =
-        "position:absolute;left:0;top:0;width:100%;height:100%;overflow:hidden;" +
-        "background:#000;border-radius:" + FINAL_RADIUS + "px;";
+        "position:absolute;left:50%;top:50%;overflow:hidden;background:#000;" +
+        "width:" + FINAL_SCALE * 100 + "%;height:" + FINAL_SCALE * 100 + "%;" +
+        "transform:translate(-50%,-50%);" +
+        "border-radius:" + FINAL_RADIUS + "px;";
       return;
     }
 
-    // Pendant la réduction : la vidéo est fixée à l'écran et rejoint la zone de l'élément
+    // Pendant la réduction : la vidéo est fixée à l'écran et rejoint sa taille finale
     const r = this.getBoundingClientRect();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
+    const fw = r.width * FINAL_SCALE;
+    const fh = r.height * FINAL_SCALE;
+    const fl = r.left + (r.width - fw) / 2;
+    const ft = r.top + (r.height - fh) / 2;
     f.style.cssText =
       "position:fixed;z-index:2147483000;overflow:hidden;background:#000;" +
-      "left:" + lerp(0, r.left, p) + "px;" +
-      "top:" + lerp(0, r.top, p) + "px;" +
-      "width:" + lerp(vw, r.width, p) + "px;" +
-      "height:" + lerp(vh, r.height, p) + "px;" +
+      "left:" + lerp(0, fl, p) + "px;" +
+      "top:" + lerp(0, ft, p) + "px;" +
+      "width:" + lerp(vw, fw, p) + "px;" +
+      "height:" + lerp(vh, fh, p) + "px;" +
       "border-radius:" + lerp(0, FINAL_RADIUS, p) + "px;";
   }
 }
