@@ -320,6 +320,16 @@ class FilmShelf extends HTMLElement {
   renderCards() {
     this.row.textContent = "";
     (this.films || []).forEach((f) => this.row.appendChild(this.makeCard(f)));
+    this.fit();
+  }
+
+  // Empêche la rangée de dépasser de l'écran (sinon les flèches sortent de la page)
+  fit() {
+    if (!this.wrap) return;
+    const r = this.getBoundingClientRect();
+    const screenW = document.documentElement.clientWidth || window.innerWidth;
+    const avail = Math.max(200, screenW - Math.max(0, r.left));
+    this.wrap.style.maxWidth = avail + "px";
     this.updateArrows();
   }
 
@@ -332,6 +342,7 @@ class FilmShelf extends HTMLElement {
     style.textContent = CSS;
 
     const wrap = el("div", "wrap");
+    this.wrap = wrap;
     if (SECTION_TITLE || SECTION_SUBTITLE) {
       const head = el("div", "head");
       if (SECTION_TITLE) head.appendChild(el("h2", "", SECTION_TITLE));
@@ -358,7 +369,8 @@ class FilmShelf extends HTMLElement {
 
     this.setupDrag();
     this.row.addEventListener("scroll", () => this.updateArrows(), { passive: true });
-    window.addEventListener("resize", () => this.updateArrows());
+    window.addEventListener("resize", () => this.fit());
+    if ("ResizeObserver" in window) new ResizeObserver(() => this.fit()).observe(this);
 
     this.buildModal();
 
