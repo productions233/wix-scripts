@@ -9,7 +9,27 @@ const FINAL_SCALE = 0.6;      // taille finale de la vidéo : 0.6 = 60 % de l'é
 const SCROLL_DISTANCE = 700;  // plus grand = réduction plus lente (en pixels de molette)
 const FINAL_RADIUS = 16;      // coins arrondis à la taille finale (0 = coins carrés)
 const SMOOTHING = 0.14;       // fluidité (0.05 = très doux, 0.3 = très réactif)
+
+// --- Textes qui apparaissent à la fin de la réduction ---
+const TITLE_TEXT = "Productions 233";                                             // au-dessus de la vidéo
+const TITLE_COLOR = "#000000";
+const TAGLINE_TEXT = "À l’écoute de vos désirs, pour immortaliser vos souvenirs";  // en dessous
+const TAGLINE_COLOR = "#D5AF37";
+const FONT_TITLE = "'Cinzel', Georgia, 'Times New Roman', serif";
+const FONT_SCRIPT = "'Pinyon Script', 'Brush Script MT', cursive";
+const TEXT_APPEAR_FROM = 0.85; // les textes apparaissent quand la réduction est à 85 % (0.5 = plus tôt, 0.95 = tout à la fin)
+const TEXT_GAP = 22;           // espace (en px) entre la vidéo et chaque texte
 // ========================
+
+// Charge Cinzel et Pinyon Script (Google Fonts) une seule fois pour la page
+function ensureFonts() {
+  if (document.getElementById("film-shelf-fonts")) return;
+  const l = document.createElement("link");
+  l.id = "film-shelf-fonts";
+  l.rel = "stylesheet";
+  l.href = "https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Pinyon+Script&display=swap";
+  document.head.appendChild(l);
+}
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -77,6 +97,25 @@ class ShrinkVideo extends HTMLElement {
     this.frame.appendChild(this.btn);
 
     this.appendChild(this.frame);
+
+    // Textes : un au-dessus, un en dessous de la vidéo finale
+    ensureFonts();
+    this.txtTop = document.createElement("div");
+    this.txtBot = document.createElement("div");
+    const t1 = document.createElement("span");
+    t1.textContent = TITLE_TEXT;
+    t1.style.cssText =
+      "font-family:" + FONT_TITLE + ";color:" + TITLE_COLOR + ";font-weight:400;" +
+      "font-size:clamp(22px,3.2vw,46px);letter-spacing:.14em;line-height:1.15;";
+    const t2 = document.createElement("span");
+    t2.textContent = TAGLINE_TEXT;
+    t2.style.cssText =
+      "font-family:" + FONT_SCRIPT + ";color:" + TAGLINE_COLOR + ";" +
+      "font-size:clamp(24px,3.2vw,46px);line-height:1.2;";
+    this.txtTop.appendChild(t1);
+    this.txtBot.appendChild(t2);
+    this.appendChild(this.txtTop);
+    this.appendChild(this.txtBot);
     this.updateSrc();
 
     // Dans l'éditeur Wix, on n'active pas le blocage du scroll
@@ -206,6 +245,28 @@ class ShrinkVideo extends HTMLElement {
     }
   }
 
+  // Place et fait apparaître les deux textes (progressivement à la fin de la réduction)
+  renderTexts(p, ft, fh, vw, r, absolute) {
+    if (!this.txtTop) return;
+    const a = clamp((p - TEXT_APPEAR_FROM) / (1 - TEXT_APPEAR_FROM), 0, 1);
+    const e = a * a * (3 - 2 * a);
+    const hostTop = r.top + window.scrollY;
+    const base = absolute
+      ? "position:absolute;left:" + -r.left + "px;"
+      : "position:fixed;z-index:2147482999;left:0;";
+    const y0 = absolute ? -hostTop : 0;
+    const common =
+      base + "width:" + vw + "px;height:" + ft + "px;display:flex;justify-content:center;" +
+      "box-sizing:border-box;padding:0 5vw;pointer-events:none;text-align:center;" +
+      "opacity:" + e + ";visibility:" + (e > 0 ? "visible" : "hidden") + ";";
+    this.txtTop.style.cssText =
+      common + "top:" + y0 + "px;align-items:flex-end;padding-bottom:" + TEXT_GAP + "px;" +
+      "transform:translateY(" + (1 - e) * -14 + "px);";
+    this.txtBot.style.cssText =
+      common + "top:" + (y0 + ft + fh) + "px;align-items:flex-start;padding-top:" + TEXT_GAP + "px;" +
+      "transform:translateY(" + (1 - e) * 14 + "px);";
+  }
+
   render() {
     if (!this.frame) return;
     const p = this.current;
@@ -230,6 +291,7 @@ class ShrinkVideo extends HTMLElement {
         "top:" + (ft - hostTop) + "px;" +
         "width:" + fw + "px;height:" + fh + "px;" +
         "border-radius:" + FINAL_RADIUS + "px;";
+      this.renderTexts(p, ft, fh, vw, r, true);
       return;
     }
 
@@ -241,6 +303,7 @@ class ShrinkVideo extends HTMLElement {
       "width:" + lerp(vw, fw, p) + "px;" +
       "height:" + lerp(vh, fh, p) + "px;" +
       "border-radius:" + lerp(0, FINAL_RADIUS, p) + "px;";
+    this.renderTexts(p, ft, fh, vw, r, false);
   }
 }
 
