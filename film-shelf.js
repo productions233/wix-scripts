@@ -6,17 +6,17 @@
 // ============================================================
 // 1) RÉGLAGES D'APPARENCE
 // ============================================================
-const SECTION_TITLE = "Des histoires devenues des films";
-const SECTION_SUBTITLE = "Cliquez sur une affiche pour découvrir le film";
-const BG = "#0a0a0a";          // fond de la section ("transparent" pour garder le fond du site)
-const TEXT = "#f2f2f2";        // couleur du texte
+const SECTION_TITLE = "";      // titre au-dessus des affiches ("" = aucun)
+const SECTION_SUBTITLE = "";   // sous-titre ("" = aucun)
+const BG = "transparent";      // fond de la section ("transparent" = reprend le fond du site, ou une couleur ex. "#ffffff")
+const TEXT = "#111111";        // couleur du texte de la section
 const ACCENT = "#c9a96e";      // couleur d'accent (doré)
 const FONT_TITLE = "Georgia, 'Times New Roman', serif";
 const FONT_TEXT = "'Helvetica Neue', Arial, sans-serif";
 
 // true  = les films viennent du tableau Wix (collection "Films") : modification facile
 // false = les films viennent de la liste FILMS ci-dessous (dans ce fichier)
-const USE_CMS = true;
+const USE_CMS = false;
 
 // ============================================================
 // 2) TES FILMS
@@ -137,7 +137,7 @@ const CSS = `
   .card {
     flex:0 0 auto; width:clamp(190px,21vw,300px); aspect-ratio:2/3; position:relative;
     border:0; padding:0; border-radius:10px; overflow:hidden; cursor:pointer; background:#1a1a1a;
-    scroll-snap-align:start; color:inherit; font:inherit; text-align:left;
+    scroll-snap-align:start; color:#fff; font:inherit; text-align:left;
     box-shadow:0 8px 24px rgba(0,0,0,.5);
     transition:transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s;
     opacity:0; transform:translateY(24px);
@@ -194,7 +194,7 @@ const CSS = `
   .modal.open { display:flex; }
   .modal.show { opacity:1; }
   .panel {
-    width:min(1000px,100%); max-height:100%; overflow:auto; background:#121212; color:${TEXT};
+    width:min(1000px,100%); max-height:100%; overflow:auto; background:#121212; color:#f2f2f2;
     border-radius:14px; box-shadow:0 30px 80px rgba(0,0,0,.8); position:relative;
     transform:translateY(18px) scale(.97); transition:transform .35s cubic-bezier(.2,.7,.2,1);
     font-family:${FONT_TEXT};
@@ -333,10 +333,12 @@ class FilmShelf extends HTMLElement {
     style.textContent = CSS;
 
     const wrap = el("div", "wrap");
-    const head = el("div", "head");
-    head.appendChild(el("h2", "", SECTION_TITLE));
-    if (SECTION_SUBTITLE) head.appendChild(el("p", "", SECTION_SUBTITLE));
-    wrap.appendChild(head);
+    if (SECTION_TITLE || SECTION_SUBTITLE) {
+      const head = el("div", "head");
+      if (SECTION_TITLE) head.appendChild(el("h2", "", SECTION_TITLE));
+      if (SECTION_SUBTITLE) head.appendChild(el("p", "", SECTION_SUBTITLE));
+      wrap.appendChild(head);
+    }
 
     const stage = el("div", "stage");
     this.row = el("div", "row");
