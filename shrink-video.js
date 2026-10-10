@@ -10,15 +10,18 @@ const SCROLL_DISTANCE = 700;  // plus grand = réduction plus lente (en pixels d
 const FINAL_RADIUS = 16;      // coins arrondis à la taille finale (0 = coins carrés)
 const SMOOTHING = 0.14;       // fluidité (0.05 = très doux, 0.3 = très réactif)
 
-// --- Textes qui apparaissent à la fin de la réduction ---
-const TITLE_TEXT = "Productions 233";                                             // au-dessus de la vidéo
-const TITLE_COLOR = "#000000";
-const TAGLINE_TEXT = "À l’écoute de vos désirs, pour immortaliser vos souvenirs";  // en dessous
+// --- Textes sous la vidéo (apparaissent à la fin de la réduction) ---
+const TAGLINE_TEXT = "À l’écoute de vos désirs, pour immortaliser vos souvenirs";
 const TAGLINE_COLOR = "#D5AF37";
+const SIGNATURE_TEXT = "Productions 233";   // petit, aligné à droite sous la phrase (comme une citation)
+const SIGNATURE_COLOR = "#000000";
 const FONT_TITLE = "'Cinzel', Georgia, 'Times New Roman', serif";
 const FONT_SCRIPT = "'Pinyon Script', 'Brush Script MT', cursive";
+const ASPECT = 16 / 9;         // format de la vidéo (16/9 = vidéo classique)
 const TEXT_APPEAR_FROM = 0.85; // les textes apparaissent quand la réduction est à 85 % (0.5 = plus tôt, 0.95 = tout à la fin)
-const TEXT_GAP = 22;           // espace (en px) entre la vidéo et chaque texte
+const TEXT_GAP = 18;           // espace (px) entre la vidéo et la phrase
+const TOP_PAD = 10;            // espace minimum (px) au-dessus de la vidéo, dans l'élément
+const TEXT_BOTTOM_PAD = 6;     // petite marge (px) sous la signature (pour ne pas couper les lettres)
 // ========================
 
 // Charge Cinzel et Pinyon Script (Google Fonts) une seule fois pour la page
@@ -98,24 +101,34 @@ class ShrinkVideo extends HTMLElement {
 
     this.appendChild(this.frame);
 
-    // Textes : un au-dessus, un en dessous de la vidéo finale
+    // Textes sous la vidéo : la phrase, puis la signature alignée à droite
     ensureFonts();
-    this.txtTop = document.createElement("div");
-    this.txtBot = document.createElement("div");
+    this.txtWrap = document.createElement("div");
+    this.cite = document.createElement("div");
+    this.cite.style.cssText =
+      "display:flex;flex-direction:column;align-items:flex-end;width:max-content;max-width:90vw;" +
+      "padding-bottom:" + TEXT_BOTTOM_PAD + "px;box-sizing:content-box;";
     const t1 = document.createElement("span");
-    t1.textContent = TITLE_TEXT;
+    t1.textContent = TAGLINE_TEXT;
     t1.style.cssText =
-      "font-family:" + FONT_TITLE + ";color:" + TITLE_COLOR + ";font-weight:400;" +
-      "font-size:clamp(22px,3.2vw,46px);letter-spacing:.14em;line-height:1.15;";
-    const t2 = document.createElement("span");
-    t2.textContent = TAGLINE_TEXT;
-    t2.style.cssText =
-      "font-family:" + FONT_SCRIPT + ";color:" + TAGLINE_COLOR + ";" +
+      "font-family:" + FONT_SCRIPT + ";color:" + TAGLINE_COLOR + ";text-align:center;" +
       "font-size:clamp(24px,3.2vw,46px);line-height:1.2;";
-    this.txtTop.appendChild(t1);
-    this.txtBot.appendChild(t2);
-    this.appendChild(this.txtTop);
-    this.appendChild(this.txtBot);
+    const t2 = document.createElement("span");
+    t2.textContent = SIGNATURE_TEXT;
+    t2.style.cssText =
+      "font-family:" + FONT_TITLE + ";color:" + SIGNATURE_COLOR + ";text-align:right;" +
+      "font-size:clamp(11px,1.05vw,15px);letter-spacing:.22em;line-height:1.2;margin-top:4px;";
+    this.cite.appendChild(t1);
+    this.cite.appendChild(t2);
+    this.txtWrap.appendChild(this.cite);
+    this.appendChild(this.txtWrap);
+
+    // les polices arrivent après : on recalcule la hauteur du texte quand elles sont prêtes
+    const fl = document.getElementById("film-shelf-fonts");
+    if (fl) fl.addEventListener("load", () => setTimeout(() => this.render(), 60));
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.render());
+    setTimeout(() => this.render(), 1200);
+    setTimeout(() => this.render(), 3000);
     this.updateSrc();
 
     // Dans l'éditeur Wix, on n'active pas le blocage du scroll
@@ -245,25 +258,18 @@ class ShrinkVideo extends HTMLElement {
     }
   }
 
-  // Place et fait apparaître les deux textes (progressivement à la fin de la réduction)
-  renderTexts(p, ft, fh, vw, r, absolute) {
-    if (!this.txtTop) return;
+  // Place le bloc de texte sous la vidéo et le fait apparaître à la fin de la réduction
+  renderTexts(p, textTop, vw, r, absolute) {
+    if (!this.txtWrap) return;
     const a = clamp((p - TEXT_APPEAR_FROM) / (1 - TEXT_APPEAR_FROM), 0, 1);
     const e = a * a * (3 - 2 * a);
-    const hostTop = r.top + window.scrollY;
-    const base = absolute
-      ? "position:absolute;left:" + -r.left + "px;"
-      : "position:fixed;z-index:2147482999;left:0;";
-    const y0 = absolute ? -hostTop : 0;
-    const common =
-      base + "width:" + vw + "px;height:" + ft + "px;display:flex;justify-content:center;" +
-      "box-sizing:border-box;padding:0 5vw;pointer-events:none;text-align:center;" +
-      "opacity:" + e + ";visibility:" + (e > 0 ? "visible" : "hidden") + ";";
-    this.txtTop.style.cssText =
-      common + "top:" + y0 + "px;align-items:flex-end;padding-bottom:" + TEXT_GAP + "px;" +
-      "transform:translateY(" + (1 - e) * -14 + "px);";
-    this.txtBot.style.cssText =
-      common + "top:" + (y0 + ft + fh) + "px;align-items:flex-start;padding-top:" + TEXT_GAP + "px;" +
+    const pos = absolute
+      ? "position:absolute;left:" + -r.left + "px;top:" + textTop + "px;"
+      : "position:fixed;z-index:2147482999;left:0;top:" + (r.top + textTop) + "px;";
+    this.txtWrap.style.cssText =
+      pos + "width:" + vw + "px;display:flex;justify-content:center;box-sizing:border-box;" +
+      "padding:0 5vw;pointer-events:none;opacity:" + e + ";" +
+      "visibility:" + (e > 0 ? "visible" : "hidden") + ";" +
       "transform:translateY(" + (1 - e) * 14 + "px);";
   }
 
@@ -276,22 +282,28 @@ class ShrinkVideo extends HTMLElement {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
-    // Taille finale : FINAL_SCALE de l'écran, centrée au milieu de l'écran
-    const fw = vw * FINAL_SCALE;
-    const fh = vh * FINAL_SCALE;
-    const fl = (vw - fw) / 2;
-    const ft = (vh - fh) / 2;
+    // Hauteur du bloc de texte (phrase + signature), mesurée pour de vrai
+    const tb = this.cite ? this.cite.offsetHeight : 0;
+    const H = r.height;
+
+    // Taille finale : la vidéo tient dans l'élément, au-dessus du texte
+    //  - largeur max : FINAL_SCALE de l'écran ; hauteur : ce qu'il reste dans l'élément
+    const roomH = Math.max(120, H - tb - TEXT_GAP - TOP_PAD);
+    const fh = Math.min((vw * FINAL_SCALE) / ASPECT, roomH);
+    const fw = fh * ASPECT;
+    const fl = (vw - fw) / 2;                    // centrée sur l'écran
+    const relTop = H - tb - TEXT_GAP - fh;       // position de la vidéo dans l'élément
+    const textTop = H - tb;                      // le texte colle au bas de l'élément
 
     // Une fois réduite, la vidéo fait partie de la page (elle défile avec elle)
     if (p >= 1) {
-      const hostTop = r.top + window.scrollY; // position de l'élément sur la page
       f.style.cssText =
         "position:absolute;overflow:hidden;background:#000;" +
         "left:" + (fl - r.left) + "px;" +
-        "top:" + (ft - hostTop) + "px;" +
+        "top:" + relTop + "px;" +
         "width:" + fw + "px;height:" + fh + "px;" +
         "border-radius:" + FINAL_RADIUS + "px;";
-      this.renderTexts(p, ft, fh, vw, r, true);
+      this.renderTexts(p, textTop, vw, r, true);
       return;
     }
 
@@ -299,11 +311,11 @@ class ShrinkVideo extends HTMLElement {
     f.style.cssText =
       "position:fixed;z-index:2147483000;overflow:hidden;background:#000;" +
       "left:" + lerp(0, fl, p) + "px;" +
-      "top:" + lerp(0, ft, p) + "px;" +
+      "top:" + lerp(0, r.top + relTop, p) + "px;" +
       "width:" + lerp(vw, fw, p) + "px;" +
       "height:" + lerp(vh, fh, p) + "px;" +
       "border-radius:" + lerp(0, FINAL_RADIUS, p) + "px;";
-    this.renderTexts(p, ft, fh, vw, r, false);
+    this.renderTexts(p, textTop, vw, r, false);
   }
 }
 
