@@ -22,6 +22,7 @@ const TEXT_APPEAR_FROM = 0.85; // les textes apparaissent quand la réduction es
 const TEXT_GAP = 18;           // espace (px) entre la vidéo et la phrase
 const TOP_PAD = 10;            // espace minimum (px) au-dessus de la vidéo, dans l'élément
 const TEXT_BOTTOM_PAD = 6;     // petite marge (px) sous la signature (pour ne pas couper les lettres)
+const SAFE_BOTTOM = 16;        // marge (px) gardée en bas de l'écran : la vidéo et le texte ne passent jamais dessous
 // ========================
 
 // Charge Cinzel et Pinyon Script (Google Fonts) une seule fois pour la page
@@ -286,14 +287,20 @@ class ShrinkVideo extends HTMLElement {
     const tb = this.cite ? this.cite.offsetHeight : 0;
     const H = r.height;
 
-    // Taille finale : la vidéo tient dans l'élément, au-dessus du texte
-    //  - largeur max : FINAL_SCALE de l'écran ; hauteur : ce qu'il reste dans l'élément
-    const roomH = Math.max(120, H - tb - TEXT_GAP - TOP_PAD);
+    // Bas du bloc (vidéo + texte), dans l'élément : le bas de l'élément, mais jamais
+    // plus bas que le bas de l'écran (sinon la vidéo sortirait de l'écran pendant la réduction)
+    const hostTop = r.top + window.scrollY;                  // position de l'élément sur la page
+    const visibleH = Math.max(260, vh - hostTop - SAFE_BOTTOM);
+    const blockBottom = Math.min(H, visibleH);
+
+    // Taille finale : la vidéo tient au-dessus du texte
+    //  - largeur max : FINAL_SCALE de l'écran ; hauteur : ce qu'il reste au-dessus du texte
+    const roomH = Math.max(120, blockBottom - tb - TEXT_GAP - TOP_PAD);
     const fh = Math.min((vw * FINAL_SCALE) / ASPECT, roomH);
     const fw = fh * ASPECT;
     const fl = (vw - fw) / 2;                    // centrée sur l'écran
-    const relTop = H - tb - TEXT_GAP - fh;       // position de la vidéo dans l'élément
-    const textTop = H - tb;                      // le texte colle au bas de l'élément
+    const relTop = blockBottom - tb - TEXT_GAP - fh;   // position de la vidéo dans l'élément
+    const textTop = blockBottom - tb;                  // le texte colle sous la vidéo
 
     // Une fois réduite, la vidéo fait partie de la page (elle défile avec elle)
     if (p >= 1) {
