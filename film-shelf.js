@@ -17,7 +17,7 @@ const FONT_TEXT = "'Helvetica Neue', Arial, sans-serif";
 
 // true  = les films viennent du tableau Wix (collection "Films") : modification facile
 // false = les films viennent de la liste FILMS ci-dessous (dans ce fichier)
-const USE_CMS = false;
+const USE_CMS = true;
 
 // true  = la rangée prend toute la largeur de l'écran, parfaitement centrée,
 //         même si l'élément est mal placé ou plus large que l'écran dans Wix
@@ -292,6 +292,15 @@ function normalizeFilm(raw) {
   f.poster = mediaImage(f.poster);
   const list = [];
 
+  if (!Array.isArray(f.videos)) {
+    // colonnes du tableau CMS : video1/label1, video2/label2, ... (jusqu'à 6)
+    const numbered = [];
+    for (let i = 1; i <= 6; i++) {
+      if (String(f["video" + i] || "").trim()) numbered.push({ label: f["label" + i] || "", url: f["video" + i] });
+    }
+    if (numbered.length) f.videos = numbered;
+  }
+
   if (Array.isArray(f.videos)) {
     f.videos.forEach((x) => {
       const isStr = typeof x === "string";
@@ -365,7 +374,9 @@ class FilmShelf extends HTMLElement {
     try {
       const arr = JSON.parse(newVal);
       if (Array.isArray(arr)) {
-        this.films = arr.map(normalizeFilm);
+        const num = (x) => { const n = parseFloat(x && x.ordre); return isNaN(n) ? Infinity : n; };
+        const sorted = arr.map((x, i) => ({ x, i })).sort((a, b) => (num(a.x) - num(b.x)) || (a.i - b.i)).map((o) => o.x);
+        this.films = sorted.map(normalizeFilm);
         if (this.row) this.renderCards();
       }
     } catch (e) {
