@@ -611,7 +611,9 @@ class FilmShelf extends HTMLElement {
     this.content.textContent = "";
     const headline = f.couple || f.title;
     this.content.appendChild(el("h3", f.couple ? "script" : "", headline));
-    const sub = [f.couple ? f.title : "", f.place, f.date].filter(Boolean).join(" · ");
+    // on n'affiche pas le titre s'il est identique aux prénoms (évite le doublon)
+    const sameAsCouple = f.couple && String(f.title || "").trim().toLowerCase() === String(f.couple).trim().toLowerCase();
+    const sub = [f.couple && !sameAsCouple ? f.title : "", f.place, f.date].filter(Boolean).join(" · ");
     if (sub) this.content.appendChild(el("div", "sub", sub));
     if (f.review) {
       const q = el("blockquote", "", f.review);
