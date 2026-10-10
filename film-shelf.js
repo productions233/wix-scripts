@@ -11,12 +11,18 @@ const SECTION_SUBTITLE = "";   // sous-titre ("" = aucun)
 const BG = "transparent";      // fond de la section ("transparent" = reprend le fond du site, ou une couleur ex. "#ffffff")
 const TEXT = "#111111";        // couleur du texte de la section
 const ACCENT = "#c9a96e";      // couleur d'accent (doré)
-const FONT_TITLE = "Georgia, 'Times New Roman', serif";
+const FONT_TITLE = "'Cinzel', Georgia, 'Times New Roman', serif";   // titres, lieux, dates
+const FONT_SCRIPT = "'Pinyon Script', 'Brush Script MT', cursive";    // prénoms des mariés
 const FONT_TEXT = "'Helvetica Neue', Arial, sans-serif";
 
 // true  = les films viennent du tableau Wix (collection "Films") : modification facile
 // false = les films viennent de la liste FILMS ci-dessous (dans ce fichier)
 const USE_CMS = false;
+
+// true  = la rangée prend toute la largeur de l'écran, parfaitement centrée,
+//         même si l'élément est mal placé ou plus large que l'écran dans Wix
+// false = la rangée reste dans le cadre de l'élément Wix
+const FULL_WIDTH = true;
 
 // ============================================================
 // 2) TES FILMS
@@ -25,9 +31,15 @@ const USE_CMS = false;
 //   place   : lieu court, ex. "Dunkerque"
 //   date    : ex. "07.12.2024"
 //   poster  : lien de l'image d'affiche (idéalement format vertical 2:3)
-//   youtube : identifiant YouTube (la partie après v=)  ex. "dQw4w9WgXcQ"
-//   vimeo   : identifiant Vimeo, ex. "123456789"
-//   video   : OU lien direct vers un fichier MP4
+//   videos  : la ou les vidéos du film. Chaque vidéo = un nom + un lien
+//             (lien YouTube, lien Vimeo, ou lien direct MP4). Exemple :
+//               videos: [
+//                 { label: "Bande-annonce", url: "https://youtu.be/XXXXXXXXXXX" },
+//                 { label: "Teaser",        url: "https://youtu.be/YYYYYYYYYYY" },
+//                 { label: "Film",          url: "https://vimeo.com/123456789" }
+//               ],
+//             Avec plusieurs vidéos, des boutons de choix apparaissent sous le lecteur.
+//             Une seule vidéo ? Tu peux écrire : videos: [ { label: "Film", url: "..." } ],
 //   review  : l'avis des mariés (texte)
 //   author  : qui a écrit l'avis, ex. "Manon & Mathias"
 // ============================================================
@@ -38,42 +50,42 @@ const FILMS = [
     place: "Meurchin",
     date: "05.09.2026",
     poster: "",
-    youtube: "", vimeo: "", video: "",
+    videos: [],
     review: "", author: ""
   },
   {
     title: "Teaser & film de mariage à Avesnes-sur-Helpe & en Belgique",
     couple: "", place: "Avesnes-sur-Helpe", date: "",
     poster: "",
-    youtube: "", vimeo: "", video: "",
+    videos: [],
     review: "", author: ""
   },
   {
     title: "Film de mariage sur la Côte d'Opale",
     couple: "", place: "Côte d'Opale", date: "",
     poster: "",
-    youtube: "", vimeo: "", video: "",
+    videos: [],
     review: "", author: ""
   },
   {
     title: "Film de mariage dans les Weppes",
     couple: "", place: "Les Weppes", date: "",
     poster: "",
-    youtube: "", vimeo: "", video: "",
+    videos: [],
     review: "", author: ""
   },
   {
     title: "Teaser & film de mariage dans le Nord",
     couple: "", place: "Nord", date: "",
     poster: "",
-    youtube: "", vimeo: "", video: "",
+    videos: [],
     review: "", author: ""
   },
   {
     title: "Film de mariage à Dunkerque",
     couple: "", place: "Dunkerque", date: "",
     poster: "",
-    youtube: "", vimeo: "", video: "",
+    videos: [],
     review: "", author: ""
   },
   // ---- Films 7 à 10 : à compléter (remplace le titre, ou supprime le bloc entier) ----
@@ -81,28 +93,28 @@ const FILMS = [
     title: "Film de mariage n°7 (à compléter)",
     couple: "", place: "", date: "",
     poster: "",
-    youtube: "", vimeo: "", video: "",
+    videos: [],
     review: "", author: ""
   },
   {
     title: "Film de mariage n°8 (à compléter)",
     couple: "", place: "", date: "",
     poster: "",
-    youtube: "", vimeo: "", video: "",
+    videos: [],
     review: "", author: ""
   },
   {
     title: "Film de mariage n°9 (à compléter)",
     couple: "", place: "", date: "",
     poster: "",
-    youtube: "", vimeo: "", video: "",
+    videos: [],
     review: "", author: ""
   },
   {
     title: "Film de mariage n°10 (à compléter)",
     couple: "", place: "", date: "",
     poster: "",
-    youtube: "", vimeo: "", video: "",
+    videos: [],
     review: "", author: ""
   }
 ];
@@ -166,10 +178,11 @@ const CSS = `
     background:linear-gradient(to top, rgba(0,0,0,.95) 0%, rgba(0,0,0,.55) 55%, rgba(0,0,0,.1) 100%);
   }
   .card .info { position:absolute; left:0; right:0; bottom:0; padding:16px; pointer-events:none; }
-  .card .name { font-family:${FONT_TITLE}; font-size:clamp(18px,1.7vw,24px); line-height:1.15; }
-  .card .meta { margin-top:4px; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:#cfcfcf; }
+  .card .name { font-family:${FONT_TITLE}; font-size:clamp(15px,1.3vw,18px); line-height:1.3; letter-spacing:.04em; }
+  .card .name.script { font-family:${FONT_SCRIPT}; font-size:clamp(28px,2.6vw,38px); line-height:1.1; letter-spacing:0; }
+  .card .meta { margin-top:6px; font-family:${FONT_TITLE}; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#cfcfcf; }
   .card .play {
-    margin-top:10px; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:${ACCENT};
+    margin-top:10px; font-family:${FONT_TITLE}; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:${ACCENT};
     opacity:0; transform:translateY(6px); transition:opacity .3s, transform .3s;
   }
   .card:hover .play, .card:focus-visible .play { opacity:1; transform:none; }
@@ -214,9 +227,18 @@ const CSS = `
     background-size:cover; background-position:center;
   }
   .media .soon span { background:rgba(0,0,0,.6); padding:10px 16px; border-radius:8px; }
+  .tabs { display:none; flex-wrap:wrap; gap:8px; padding:16px clamp(18px,3vw,34px) 0; }
+  .tab {
+    border:1px solid rgba(255,255,255,.35); background:transparent; color:#e6e6e6; cursor:pointer;
+    padding:9px 16px; border-radius:999px; font-family:${FONT_TITLE}; font-size:12px;
+    letter-spacing:.14em; text-transform:uppercase; transition:background .25s, color .25s, border-color .25s;
+  }
+  .tab:hover { border-color:${ACCENT}; color:${ACCENT}; }
+  .tab.on { background:${ACCENT}; border-color:${ACCENT}; color:#111; }
   .content { padding:clamp(18px,3vw,34px); }
-  .content h3 { margin:0; font-family:${FONT_TITLE}; font-weight:400; font-size:clamp(24px,3vw,38px); line-height:1.15; }
-  .content .sub { margin-top:6px; color:${ACCENT}; font-size:13px; letter-spacing:.1em; text-transform:uppercase; }
+  .content h3 { margin:0; font-family:${FONT_TITLE}; font-weight:400; font-size:clamp(20px,2.4vw,30px); line-height:1.25; letter-spacing:.04em; }
+  .content h3.script { font-family:${FONT_SCRIPT}; font-size:clamp(40px,5vw,64px); line-height:1.05; letter-spacing:0; }
+  .content .sub { margin-top:8px; font-family:${FONT_TITLE}; color:${ACCENT}; font-size:13px; letter-spacing:.14em; text-transform:uppercase; }
   .content blockquote {
     margin:22px 0 0; padding:0 0 0 18px; border-left:2px solid ${ACCENT};
     font-size:clamp(15px,1.4vw,17px); line-height:1.7; color:#dcdcdc; white-space:pre-line;
@@ -252,19 +274,52 @@ function mediaVideo(s) {
   if (s.indexOf("wix:video://v1/") === 0) return "https://video.wixstatic.com/video/" + s.split("/")[3] + "/720p/mp4/file.mp4";
   return s;
 }
+function toSource(url) {
+  const v = String(url || "").trim();
+  const out = { youtube: "", vimeo: "", video: "" };
+  if (!v) return out;
+  const y = ytId(v), vi = vimeoId(v);
+  if (y) out.youtube = y;
+  else if (vi) out.vimeo = vi;
+  else out.video = mediaVideo(v);
+  return out;
+}
+function hasSource(x) { return !!(x.youtube || x.vimeo || x.video); }
+
+// Chaque film a une liste "videos" : [{ label, youtube|vimeo|video }, ...]
 function normalizeFilm(raw) {
   const f = Object.assign({}, raw);
   f.poster = mediaImage(f.poster);
-  const v = String(f.video || "").trim();
-  if (!f.youtube && !f.vimeo && v) {
-    const y = ytId(v), vi = vimeoId(v);
-    if (y) { f.youtube = y; f.video = ""; }
-    else if (vi) { f.vimeo = vi; f.video = ""; }
-    else f.video = mediaVideo(v);
+  const list = [];
+
+  if (Array.isArray(f.videos)) {
+    f.videos.forEach((x) => {
+      const isStr = typeof x === "string";
+      const src = toSource(isStr ? x : x && (x.url || x.video));
+      if (hasSource(src)) list.push(Object.assign({ label: isStr ? "" : (x.label || "") }, src));
+    });
+  } else {
+    // ancienne écriture : une seule vidéo (youtube / vimeo / video)
+    let src;
+    if (f.youtube) src = { youtube: ytId(f.youtube) || f.youtube, vimeo: "", video: "" };
+    else if (f.vimeo) src = { youtube: "", vimeo: vimeoId(f.vimeo) || f.vimeo, video: "" };
+    else src = toSource(f.video);
+    if (hasSource(src)) list.push(Object.assign({ label: "" }, src));
   }
-  if (f.youtube) f.youtube = ytId(f.youtube) || f.youtube;
-  if (f.vimeo) f.vimeo = vimeoId(f.vimeo) || f.vimeo;
+
+  if (list.length > 1) list.forEach((v, i) => { if (!v.label) v.label = "Vidéo " + (i + 1); });
+  f.videos = list;
   return f;
+}
+
+// Charge Cinzel et Pinyon Script (Google Fonts) une seule fois pour la page
+function ensureFonts() {
+  if (document.getElementById("film-shelf-fonts")) return;
+  const l = document.createElement("link");
+  l.id = "film-shelf-fonts";
+  l.rel = "stylesheet";
+  l.href = "https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Pinyon+Script&display=swap";
+  document.head.appendChild(l);
 }
 
 function el(tag, cls, text) {
@@ -292,6 +347,7 @@ class FilmShelf extends HTMLElement {
     this.style.display = "block";
     this.style.width = "100%";
     this.style.height = "100%";
+    ensureFonts();
     if (!this.built) {
       this.built = true;
       this.build();
@@ -323,18 +379,22 @@ class FilmShelf extends HTMLElement {
     this.fit();
   }
 
-  // Empêche la rangée de dépasser de l'écran (sinon les flèches sortent de la page)
+  // Cale la rangée sur l'écran (centrage et largeur) quel que soit le placement dans Wix
   fit() {
     if (!this.wrap) return;
     const r = this.getBoundingClientRect();
     const screenW = document.documentElement.clientWidth || window.innerWidth;
-    const avail = Math.max(200, screenW - Math.max(0, r.left));
-    this.wrap.style.maxWidth = avail + "px";
+    const st = this.wrap.style;
+    if (FULL_WIDTH) {
+      st.width = screenW + "px";
+      st.maxWidth = "none";
+      st.marginLeft = -r.left + "px";
+    } else {
+      st.width = "100%";
+      st.marginLeft = "0";
+      st.maxWidth = Math.max(200, screenW - Math.max(0, r.left)) + "px";
+    }
     this.updateArrows();
-  }
-
-  disconnectedCallback() {
-    window.removeEventListener("keydown", this.onKey);
   }
 
   build() {
@@ -378,7 +438,7 @@ class FilmShelf extends HTMLElement {
     this.root.appendChild(wrap);
     this.root.appendChild(this.modal);
 
-    this.updateArrows();
+    this.fit();
     this.observeEntry();
   }
 
@@ -402,7 +462,7 @@ class FilmShelf extends HTMLElement {
     b.appendChild(el("div", "shade"));
 
     const info = el("div", "info");
-    info.appendChild(el("div", "name", name));
+    info.appendChild(el("div", f.couple ? "name script" : "name", name));
     const meta = [f.place, f.date].filter(Boolean).join(" · ");
     if (meta) info.appendChild(el("div", "meta", meta));
     info.appendChild(el("div", "play", "▶ Voir le film"));
@@ -465,9 +525,11 @@ class FilmShelf extends HTMLElement {
     this.closeBtn.setAttribute("aria-label", "Fermer");
     this.closeBtn.addEventListener("click", () => this.close());
     this.media = el("div", "media");
+    this.tabs = el("div", "tabs");
     this.content = el("div", "content");
     this.panel.appendChild(this.closeBtn);
     this.panel.appendChild(this.media);
+    this.panel.appendChild(this.tabs);
     this.panel.appendChild(this.content);
     this.modal.appendChild(this.panel);
 
@@ -479,18 +541,18 @@ class FilmShelf extends HTMLElement {
     this.modal.addEventListener("touchmove", stop, { passive: false });
   }
 
-  buildMedia(f) {
+  buildMedia(src, f) {
     this.media.textContent = "";
     let node = null;
-    if (f.youtube) {
+    if (src && src.youtube) {
       node = document.createElement("iframe");
-      node.src = "https://www.youtube-nocookie.com/embed/" + encodeURIComponent(f.youtube) + "?autoplay=1&rel=0";
-    } else if (f.vimeo) {
+      node.src = "https://www.youtube-nocookie.com/embed/" + encodeURIComponent(src.youtube) + "?autoplay=1&rel=0";
+    } else if (src && src.vimeo) {
       node = document.createElement("iframe");
-      node.src = "https://player.vimeo.com/video/" + encodeURIComponent(f.vimeo) + "?autoplay=1";
-    } else if (f.video) {
+      node.src = "https://player.vimeo.com/video/" + encodeURIComponent(src.vimeo) + "?autoplay=1";
+    } else if (src && src.video) {
       node = document.createElement("video");
-      node.src = f.video;
+      node.src = src.video;
       node.controls = true;
       node.autoplay = true;
       node.playsInline = true;
@@ -499,7 +561,7 @@ class FilmShelf extends HTMLElement {
     if (node && node.tagName === "IFRAME") {
       node.allow = "autoplay; fullscreen; picture-in-picture";
       node.allowFullscreen = true;
-      node.title = f.couple || f.title;
+      node.title = (src.label ? src.label + " - " : "") + (f.couple || f.title);
     }
     if (node) {
       this.media.appendChild(node);
@@ -511,13 +573,33 @@ class FilmShelf extends HTMLElement {
     }
   }
 
+  // Boutons de choix (Bande-annonce / Teaser / Film...) quand il y a plusieurs vidéos
+  buildTabs(f) {
+    this.tabs.textContent = "";
+    const list = f.videos || [];
+    if (list.length < 2) { this.tabs.style.display = "none"; return; }
+    this.tabs.style.display = "flex";
+    list.forEach((v, i) => {
+      const b = el("button", "tab" + (i === 0 ? " on" : ""), v.label);
+      b.type = "button";
+      b.addEventListener("click", () => {
+        this.tabs.querySelectorAll(".tab").forEach((t) => t.classList.remove("on"));
+        b.classList.add("on");
+        this.buildMedia(v, f);
+      });
+      this.tabs.appendChild(b);
+    });
+  }
+
   open(f, trigger) {
     this.lastFocus = trigger;
-    this.buildMedia(f);
+    const first = (f.videos && f.videos[0]) || null;
+    this.buildMedia(first, f);
+    this.buildTabs(f);
 
     this.content.textContent = "";
     const headline = f.couple || f.title;
-    this.content.appendChild(el("h3", "", headline));
+    this.content.appendChild(el("h3", f.couple ? "script" : "", headline));
     const sub = [f.couple ? f.title : "", f.place, f.date].filter(Boolean).join(" · ");
     if (sub) this.content.appendChild(el("div", "sub", sub));
     if (f.review) {
