@@ -111,10 +111,10 @@ const FILMS = [
 // 3) CODE (tu n'as rien à modifier en dessous)
 // ============================================================
 const CSS = `
-  :host { display:block; width:100%; height:100%; }
+  :host { display:block; width:100%; max-width:100vw; min-width:0; height:100%; }
   * { box-sizing:border-box; }
   .wrap {
-    width:100%; height:100%; overflow:hidden; background:${BG}; color:${TEXT};
+    width:100%; max-width:100vw; min-width:0; height:100%; overflow:hidden; background:${BG}; color:${TEXT};
     font-family:${FONT_TEXT}; display:flex; flex-direction:column; justify-content:center;
     padding:32px 0; position:relative;
   }
@@ -125,9 +125,9 @@ const CSS = `
   }
   .head p { margin:8px 0 0; color:${ACCENT}; font-size:clamp(13px,1.2vw,15px); letter-spacing:.12em; text-transform:uppercase; }
 
-  .stage { position:relative; }
+  .stage { position:relative; width:100%; min-width:0; }
   .row {
-    display:flex; gap:clamp(12px,1.6vw,22px); overflow-x:auto; overflow-y:hidden;
+    display:flex; gap:clamp(12px,1.6vw,22px); overflow-x:auto; overflow-y:hidden; width:100%; min-width:0;
     padding:28px clamp(20px,5vw,64px); scroll-snap-type:x proximity; scrollbar-width:none;
     -webkit-overflow-scrolling:touch; cursor:grab;
   }
@@ -177,7 +177,7 @@ const CSS = `
   .arrow {
     position:absolute; top:0; bottom:0; width:clamp(40px,5vw,64px); border:0; cursor:pointer; z-index:4;
     color:#fff; font-size:34px; display:flex; align-items:center; justify-content:center;
-    opacity:0; transition:opacity .3s;
+    opacity:.75; transition:opacity .3s;
   }
   .arrow.l { left:0; background:linear-gradient(to right, rgba(0,0,0,.75), rgba(0,0,0,0)); }
   .arrow.r { right:0; background:linear-gradient(to left, rgba(0,0,0,.75), rgba(0,0,0,0)); }
@@ -325,7 +325,6 @@ class FilmShelf extends HTMLElement {
 
   disconnectedCallback() {
     window.removeEventListener("keydown", this.onKey);
-    document.documentElement.style.overflow = this.prevOverflow || "";
   }
 
   build() {
@@ -520,8 +519,8 @@ class FilmShelf extends HTMLElement {
     requestAnimationFrame(() => this.modal.classList.add("show"));
     this.panel.scrollTop = 0;
 
-    this.prevOverflow = document.documentElement.style.overflow;
-    document.documentElement.style.overflow = "hidden";
+    // On mémorise l'endroit où se trouve le visiteur pour y revenir à la fermeture
+    this.savedY = window.pageYOffset || document.documentElement.scrollTop || 0;
     window.addEventListener("keydown", this.onKey);
     this.closeBtn.focus({ preventScroll: true });
   }
@@ -529,12 +528,23 @@ class FilmShelf extends HTMLElement {
   close() {
     this.modal.classList.remove("show");
     window.removeEventListener("keydown", this.onKey);
-    document.documentElement.style.overflow = this.prevOverflow || "";
+    this.restoreScroll();
     setTimeout(() => {
       this.modal.classList.remove("open");
       this.media.textContent = ""; // coupe la vidéo
     }, 300);
     if (this.lastFocus) this.lastFocus.focus({ preventScroll: true });
+  }
+
+  restoreScroll() {
+    const y = this.savedY || 0;
+    const go = () => {
+      try { window.scrollTo({ top: y, left: 0, behavior: "instant" }); }
+      catch (err) { window.scrollTo(0, y); }
+    };
+    go();
+    requestAnimationFrame(go);
+    setTimeout(go, 120);
   }
 
   onKey(e) {
