@@ -10,6 +10,10 @@
 // ============================================================
 // 1) RÉGLAGES
 // ============================================================
+(function () {
+"use strict";
+// Tout le code est isolé ici pour ne jamais entrer en conflit avec les autres éléments de la page
+
 const BG = "transparent";      // fond ("transparent" = reprend le fond du site)
 const ACCENT = "#D5AF37";      // doré
 const FONT_TITLE = "'Cinzel', Georgia, 'Times New Roman', serif";
@@ -535,3 +539,5 @@ class OfferCards extends HTMLElement {
 if (!customElements.get("offer-cards")) {
   customElements.define("offer-cards", OfferCards);
 }
+
+})();
