@@ -22,7 +22,9 @@ const CONTACT_HEADING = "Donnons vie à votre film";
 const CONTACT_URL = "";
 
 // ============================================================
-// 2) LES SIX FORMULES
+// 2) LES SIX FORMULES (affichées par défaut, et dans l'éditeur Wix)
+//    Sur le site, elles sont remplacées par celles de ton tableau Wix (collection des offres)
+//    si le code de la page les envoie : tu modifies alors tout depuis Wix, sans toucher à ce fichier.
 //   name    : nom de la formule (titre h3)
 //   pitch   : phrase courte affichée sur la carte
 //   text    : description complète, affichée dans la fenêtre
@@ -202,6 +204,22 @@ function toSource(url) {
   return out;
 }
 
+// Accepte une ligne du tableau Wix (title / name, pitch, text, image, preview, example, ordre)
+function normalizeOffer(raw) {
+  const o = Object.assign({}, raw);
+  o.name = String(o.name || o.title || "").trim();
+  o.pitch = String(o.pitch || "").trim();
+  o.text = String(o.text || o.pitch || "").trim();
+  o.image = o.image || "";
+  o.preview = o.preview || "";
+  o.example = o.example || "";
+  return o;
+}
+function sortByOrdre(list) {
+  const num = (x) => { const n = parseFloat(x && x.ordre); return isNaN(n) ? Infinity : n; };
+  return list.map((x, i) => ({ x, i })).sort((a, b) => (num(a.x) - num(b.x)) || (a.i - b.i)).map((o) => o.x);
+}
+
 // Charge Cinzel (Google Fonts) une seule fois pour la page
 function ensureFonts() {
   if (document.getElementById("film-shelf-fonts")) return;
@@ -220,9 +238,14 @@ function el(tag, cls, text) {
 }
 
 class OfferCards extends HTMLElement {
+  static get observedAttributes() {
+    return ["offers"];
+  }
+
   constructor() {
     super();
     this.root = this.attachShadow({ mode: "open" });
+    this.offers = OFFERS.map(normalizeOffer);
     this.built = false;
     this.lastFocus = null;
     this.savedY = 0;
@@ -244,13 +267,35 @@ class OfferCards extends HTMLElement {
     window.removeEventListener("keydown", this.onKey);
   }
 
+  // Les offres envoyées par la page (tableau Wix) remplacent celles du fichier
+  attributeChangedCallback(name, oldVal, newVal) {
+    if (name !== "offers" || !newVal) return;
+    try {
+      const arr = JSON.parse(newVal);
+      if (!Array.isArray(arr)) return;
+      const list = sortByOrdre(arr).map(normalizeOffer).filter((o) => o.name);
+      if (list.length) {
+        this.offers = list;
+        if (this.grid) this.renderCards();
+      }
+    } catch (e) {
+      console.error("offer-cards : liste des offres illisible", e);
+    }
+  }
+
+  renderCards() {
+    this.grid.textContent = "";
+    this.offers.forEach((o) => this.grid.appendChild(this.makeCard(o)));
+    this.fit();
+  }
+
   build() {
     const style = document.createElement("style");
     style.textContent = CSS;
 
     this.wrap = el("div", "wrap");
     this.grid = el("div", "grid");
-    OFFERS.forEach((o) => this.grid.appendChild(this.makeCard(o)));
+    this.offers.forEach((o) => this.grid.appendChild(this.makeCard(o)));
     this.wrap.appendChild(this.grid);
 
     this.buildModal();
