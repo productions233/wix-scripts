@@ -6,6 +6,10 @@
 // ============================================================
 // 1) RÉGLAGES D'APPARENCE
 // ============================================================
+(function () {
+"use strict";
+// Tout le code est isolé ici pour ne jamais entrer en conflit avec les autres éléments de la page
+
 const SECTION_TITLE = "";      // titre au-dessus des affiches ("" = aucun)
 const SECTION_SUBTITLE = "";   // sous-titre ("" = aucun)
 const BG = "transparent";      // fond de la section ("transparent" = reprend le fond du site, ou une couleur ex. "#ffffff")
@@ -29,6 +33,7 @@ const FULL_WIDTH = true;
 // Pour chaque film, remplis ce que tu as. Tout est optionnel sauf "title".
 //   couple  : "Prénom & Prénom"  -> devient le "titre du film" sur l'affiche
 //   place   : lieu court, ex. "Dunkerque"
+//   legende : titre visible sous le nom, ex. "Film de mariage à Dunkerque" (sinon : "Film de mariage · lieu")
 //   date    : ex. "07.12.2024"
 //   poster  : lien de l'image d'affiche (idéalement format vertical 2:3)
 //   videos  : la ou les vidéos du film. Chaque vidéo = un nom + un lien
@@ -180,7 +185,7 @@ const CSS = `
   .card .info { position:absolute; left:0; right:0; bottom:0; padding:16px; pointer-events:none; }
   .card .name { font-family:${FONT_TITLE}; font-size:clamp(15px,1.3vw,18px); line-height:1.3; letter-spacing:.04em; }
   .card .name.script { font-family:${FONT_SCRIPT}; font-size:clamp(28px,2.6vw,38px); line-height:1.1; letter-spacing:0; }
-  .card .meta { margin-top:6px; font-family:${FONT_TITLE}; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#cfcfcf; }
+  .card .meta { margin:6px 0 0; font-family:${FONT_TITLE}; font-weight:400; font-size:11px; line-height:1.45; letter-spacing:.12em; text-transform:uppercase; color:#cfcfcf; }
   .card .play {
     margin-top:10px; font-family:${FONT_TITLE}; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:${ACCENT};
     opacity:0; transform:translateY(6px); transition:opacity .3s, transform .3s;
@@ -474,8 +479,11 @@ class FilmShelf extends HTMLElement {
 
     const info = el("div", "info");
     info.appendChild(el("div", f.couple ? "name script" : "name", name));
-    const meta = [f.place, f.date].filter(Boolean).join(" · ");
-    if (meta) info.appendChild(el("div", "meta", meta));
+    // Légende visible sous le nom : titre "SEO" de la colonne "legende" (ex. "Film de mariage à Dunkerque"),
+    // sinon "Film de mariage · lieu". C'est un vrai titre (h3) lisible par Google, même hors écran.
+    const legend = String(f.legende || "").trim() || (f.place ? "Film de mariage · " + f.place : "");
+    const meta = [legend, f.date].filter(Boolean).join(" · ");
+    if (meta) info.appendChild(el("h3", "meta", meta));
     info.appendChild(el("div", "play", "▶ Voir le film"));
     b.appendChild(info);
 
@@ -662,3 +670,5 @@ class FilmShelf extends HTMLElement {
 if (!customElements.get("film-shelf")) {
   customElements.define("film-shelf", FilmShelf);
 }
+
+})();
