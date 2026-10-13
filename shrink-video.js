@@ -3,9 +3,17 @@
 // que la page est bloquée, puis la page se met à défiler normalement.
 
 // ====== À MODIFIER ======
+(function () {
+"use strict";
+// Tout le code est isolé ici pour ne jamais entrer en conflit avec les autres éléments de la page
+
 const VIDEO_URL = "https://video.wixstatic.com/video/c2054d_f287c70e838842178e66c4b2183b10fb/720p/mp4/file.mp4"; // si ça ne marche pas, essaie 480p ou remets 1080p
 const POSTER_URL = "https://static.wixstatic.com/media/c2054d_f287c70e838842178e66c4b2183b10fbf001.jpg"; // image affichée avant le chargement de la vidéo
-const FINAL_SCALE = 0.6;      // taille finale de la vidéo : 0.6 = 60 % de l'écran (centrée)
+// "element" = la vidéo se réduit EXACTEMENT à la taille et à la place de l'élément dans l'éditeur Wix
+//             (ce que tu vois dans l'éditeur = ce que voient les visiteurs, sur tous les écrans)
+// "screen"  = la vidéo se réduit à FINAL_SCALE de l'écran, centrée (dépend de l'écran du visiteur)
+const FINAL_MODE = "element";
+const FINAL_SCALE = 0.6;      // utilisé seulement en mode "screen" : 0.6 = 60 % de l'écran
 const SCROLL_DISTANCE = 700;  // plus grand = réduction plus lente (en pixels de molette)
 const FINAL_RADIUS = 16;      // coins arrondis à la taille finale (0 = coins carrés)
 const SMOOTHING = 0.14;       // fluidité (0.05 = très doux, 0.3 = très réactif)
@@ -41,6 +49,8 @@ class ShrinkVideo extends HTMLElement {
     this.style.position = "relative";
     this.style.width = "100%";
     this.style.height = "100%";
+    this.style.flex = "1 1 100%";
+    this.style.minWidth = "0";
 
     this.frame = document.createElement("div");
     this.video = document.createElement("video");
@@ -207,6 +217,19 @@ class ShrinkVideo extends HTMLElement {
     }
   }
 
+  // Position et taille de l'élément dans la page (si l'élément mesure 0, on prend son conteneur Wix)
+  getBox() {
+    const r = this.getBoundingClientRect();
+    const par = this.parentElement ? this.parentElement.getBoundingClientRect() : null;
+    const okW = r.width >= 4, okH = r.height >= 4;
+    return {
+      left: okW ? r.left : (par ? par.left : r.left),
+      top: okH ? r.top : (par ? par.top : r.top),
+      width: okW ? r.width : (par ? par.width : 0),
+      height: okH ? r.height : (par ? par.height : 0)
+    };
+  }
+
   render() {
     if (!this.frame) return;
     const p = this.current;
@@ -215,8 +238,30 @@ class ShrinkVideo extends HTMLElement {
     const r = this.getBoundingClientRect();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
+    const box = this.getBox();
 
-    // Taille finale : FINAL_SCALE de l'écran, centrée au milieu de l'écran
+    // MODE "element" : la vidéo finale occupe exactement l'élément placé dans Wix
+    if (FINAL_MODE === "element" && box.width > 50 && box.height > 50) {
+      if (p >= 1) {
+        f.style.cssText =
+          "position:absolute;overflow:hidden;background:#000;" +
+          "left:" + (box.left - r.left) + "px;" +
+          "top:" + (box.top - r.top) + "px;" +
+          "width:" + box.width + "px;height:" + box.height + "px;" +
+          "border-radius:" + FINAL_RADIUS + "px;";
+        return;
+      }
+      f.style.cssText =
+        "position:fixed;z-index:2147483000;overflow:hidden;background:#000;" +
+        "left:" + lerp(0, box.left, p) + "px;" +
+        "top:" + lerp(0, box.top, p) + "px;" +
+        "width:" + lerp(vw, box.width, p) + "px;" +
+        "height:" + lerp(vh, box.height, p) + "px;" +
+        "border-radius:" + lerp(0, FINAL_RADIUS, p) + "px;";
+      return;
+    }
+
+    // MODE "screen" (ou secours si l'élément n'a pas de taille) : centrée sur l'écran
     const fw = vw * FINAL_SCALE;
     const fh = vh * FINAL_SCALE;
     const fl = (vw - fw) / 2;
@@ -248,3 +293,5 @@ class ShrinkVideo extends HTMLElement {
 if (!customElements.get("shrink-video")) {
   customElements.define("shrink-video", ShrinkVideo);
 }
+
+})();
