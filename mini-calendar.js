@@ -142,7 +142,7 @@ function el(tag, cls, text) {
 
 class MiniCalendar extends HTMLElement {
   static get observedAttributes() {
-    return ["dates"];
+    return ["dates", "largeur"];
   }
 
   constructor() {
@@ -168,6 +168,7 @@ class MiniCalendar extends HTMLElement {
 
   // Les dates envoyées par la page (tableau Wix)
   attributeChangedCallback(name, oldVal, newVal) {
+    if (name === "largeur") { if (this.wrap) this.fit(); return; }
     if (name !== "dates") return;
     const set = new Set();
     try {
@@ -230,23 +231,31 @@ class MiniCalendar extends HTMLElement {
     setTimeout(() => this.fit(), 2500);
   }
 
-  // Largeur disponible : celle de l'élément, sinon celle du premier conteneur Wix assez large
+  // Largeur du calendrier, dans cet ordre :
+  //  1) l'attribut "largeur" (en pixels) que tu peux définir dans Wix (« Définir les attributs »)
+  //  2) la largeur de l'élément dans la page
+  //  3) la largeur du premier conteneur Wix assez large
+  //  4) 340 px
   availableWidth() {
+    const attr = parseFloat(this.getAttribute("largeur"));
+    if (attr >= 150 && attr <= 1200) return { w: attr, source: "attribut largeur" };
     let node = this, depth = 0;
     while (node && depth < 6) {
       const w = node.getBoundingClientRect().width;
-      if (w >= 200) return Math.min(w, window.innerWidth);
+      if (w >= 120) return { w: Math.min(w, window.innerWidth), source: depth === 0 ? "élément" : "conteneur " + depth };
       node = node.parentElement;
       depth++;
     }
-    return DEFAULT_WIDTH;
+    return { w: DEFAULT_WIDTH, source: "défaut" };
   }
 
   fit() {
     if (!this.wrap) return;
-    const w = Math.round(this.availableWidth());
+    const a = this.availableWidth();
+    const w = Math.round(a.w);
     this.wrap.style.width = w + "px";
     this.wrap.style.setProperty("--w", w + "px");
+    this.setAttribute("data-largeur-detectee", w + " (" + a.source + ")");
     const total = this.root.querySelector(".cal").offsetHeight;
     if (total > 40) this.setAttribute("data-hauteur-conseillee", String(Math.round(total + 8)));
   }
