@@ -24,6 +24,8 @@ const LEGEND_TEXT = "Date indisponible";
 const MAX_MONTHS_AHEAD = 24;       // jusqu'à combien de mois dans le futur on peut naviguer
 const TIMEZONE = "Europe/Paris";   // fuseau utilisé pour savoir quel jour on est
 
+const DEFAULT_WIDTH = 340;         // largeur utilisée si Wix ne donne aucune largeur à l'élément
+
 const MONTHS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
 const WEEKDAYS = ["L", "M", "M", "J", "V", "S", "D"];
 
@@ -32,11 +34,11 @@ const CSS = `
   * { box-sizing:border-box; }
   .wrap {
     width:100%; height:100%; background:${BG}; color:${TEXT_COLOR}; font-family:${FONT_TITLE};
-    container-type:inline-size; display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
   }
   .cal { width:100%; max-width:520px; }
   .head { display:flex; align-items:center; justify-content:space-between; padding:0 2px 10px; }
-  .title { font-size:16px; font-size:max(15px,4.6cqw); letter-spacing:.14em; text-transform:uppercase; color:${ACCENT}; text-align:center; flex:1; }
+  .title { font-size:16px; font-size:max(15px, calc(var(--w, 340px) * .046)); letter-spacing:.14em; text-transform:uppercase; color:${ACCENT}; text-align:center; flex:1; }
   .nav {
     border:0; background:transparent; color:${ACCENT}; cursor:pointer; font-size:28px; line-height:1; padding:4px 10px;
     font-family:Arial,sans-serif; transition:opacity .2s, transform .2s;
@@ -48,7 +50,7 @@ const CSS = `
   .wd { text-align:center; font-size:11px; letter-spacing:.1em; color:${MUTED_COLOR}; padding-bottom:4px; }
   .day {
     position:relative; aspect-ratio:1/1; display:flex; align-items:center; justify-content:center;
-    font-size:14px; font-size:max(12px,4cqw); border-radius:50%; user-select:none;
+    font-size:14px; font-size:max(12px, calc(var(--w, 340px) * .04)); border-radius:50%; user-select:none;
   }
   .day.empty { visibility:hidden; }
   .day.past { opacity:${PAST_OPACITY}; }
@@ -183,6 +185,7 @@ class MiniCalendar extends HTMLElement {
     const style = document.createElement("style");
     style.textContent = CSS;
     const wrap = el("div", "wrap");
+    this.wrap = wrap;
     const cal = el("div", "cal");
 
     const head = el("div", "head");
@@ -215,6 +218,37 @@ class MiniCalendar extends HTMLElement {
     this.prev.addEventListener("click", () => this.go(-1));
     this.next.addEventListener("click", () => this.go(1));
     this.render();
+    this.fit();
+
+    window.addEventListener("resize", () => this.fit());
+    if ("ResizeObserver" in window) {
+      const ro = new ResizeObserver(() => this.fit());
+      ro.observe(this);
+      if (this.parentElement) ro.observe(this.parentElement);
+    }
+    setTimeout(() => this.fit(), 600);   // les polices arrivent après
+    setTimeout(() => this.fit(), 2500);
+  }
+
+  // Largeur disponible : celle de l'élément, sinon celle du premier conteneur Wix assez large
+  availableWidth() {
+    let node = this, depth = 0;
+    while (node && depth < 6) {
+      const w = node.getBoundingClientRect().width;
+      if (w >= 200) return Math.min(w, window.innerWidth);
+      node = node.parentElement;
+      depth++;
+    }
+    return DEFAULT_WIDTH;
+  }
+
+  fit() {
+    if (!this.wrap) return;
+    const w = Math.round(this.availableWidth());
+    this.wrap.style.width = w + "px";
+    this.wrap.style.setProperty("--w", w + "px");
+    const total = this.root.querySelector(".cal").offsetHeight;
+    if (total > 40) this.setAttribute("data-hauteur-conseillee", String(Math.round(total + 8)));
   }
 
   monthsFromNow() {
@@ -261,9 +295,7 @@ class MiniCalendar extends HTMLElement {
       g.appendChild(cell);
     }
 
-    // hauteur conseillée pour l'élément dans Wix
-    const total = this.root.querySelector(".cal").offsetHeight;
-    if (total > 40) this.setAttribute("data-hauteur-conseillee", String(Math.round(total + 8)));
+    if (this.wrap) this.fit();
   }
 }
 
